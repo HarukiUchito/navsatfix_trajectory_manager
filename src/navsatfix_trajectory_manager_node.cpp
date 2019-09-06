@@ -40,8 +40,8 @@ public:
 
     void MainLoop();
 private:
-    visualization_msgs::MarkerArray points_;
-    ros::Publisher pub_points_;
+    visualization_msgs::MarkerArray markers_;
+    ros::Publisher pub_markers_;
 
     void InitializeMarkerArray();
     void AddNewPoint(const double x, const double y, const SolutionStatus);
@@ -76,7 +76,7 @@ NavsatfixTrajectory::NavsatfixTrajectory()
     ros::NodeHandle nh;
 
     // register publisher
-    pub_points_ = nh.advertise<visualization_msgs::MarkerArray>("navsatfix_trajectory", 1);
+    pub_markers_ = nh.advertise<visualization_msgs::MarkerArray>("navsatfix_trajectory", 1);
 
     // register services
     sv_set_initial_lla_ = nh.advertiseService(
@@ -95,10 +95,15 @@ NavsatfixTrajectory::NavsatfixTrajectory()
 
 void NavsatfixTrajectory::MainLoop()
 {
+    for (int i = 0; i < 10; ++i) {
+        for (int j = 0; j < 10; ++j) {
+            AddNewPoint(double(i), double(j), SolutionStatus((i + j) % 4));
+        }
+    }
+
     ros::Rate rate(10);
-    while (ros::ok())
-    {
-        pub_points_.publish(points_);
+    while (ros::ok()) {
+        pub_markers_.publish(markers_);
 
         ros::spinOnce();
         rate.sleep();
@@ -107,27 +112,43 @@ void NavsatfixTrajectory::MainLoop()
 
 void NavsatfixTrajectory::InitializeMarkerArray()
 {
-    visualization_msgs::Marker m;
-    m.header.frame_id = "/gnss";
-    m.header.stamp = ros::Time::now();
-    m.ns = "navsatfix_trajectory_manager_node";
-    m.type = visualization_msgs::Marker::POINTS;
-    m.action = visualization_msgs::Marker::ADD;
-    m.scale.x = 0.1, m.scale.y = 0.1, m.scale.z = 0.1;
-    points_.markers.push_back(m);
+    const char* frame_id = "/gnss";
+    const char* name_space = "navsatfix_trajectory_manager_node";
+    const double point_size = 0.2;
+    const double line_size = 0.1;
 
-    for (int i = 0; i < 10; ++i) {
-        for (int j = 0; j < 10; ++j) {
-            AddNewPoint(double(i), double(j), SolutionStatus((i + j) % 4));
-        }
-    }
+    // Initialize points
+    visualization_msgs::Marker points;
+    points.header.frame_id = frame_id;
+    points.header.stamp = ros::Time::now();
+    points.ns = std::string(name_space);
+    points.id = markers_.markers.size();
+    points.type = visualization_msgs::Marker::POINTS;
+    points.action = visualization_msgs::Marker::ADD;
+    points.scale.x = point_size, points.scale.y = point_size, points.scale.z = point_size;
+    markers_.markers.push_back(points);
+
+    // Initialize lines
+    visualization_msgs::Marker lines;
+    lines.header.frame_id = frame_id;
+    lines.header.stamp = ros::Time::now();
+    lines.ns = std::string(name_space);
+    lines.id = markers_.markers.size();
+    lines.type = visualization_msgs::Marker::LINE_STRIP;
+    lines.action = visualization_msgs::Marker::ADD;
+    lines.scale.x = line_size, lines.scale.y = line_size, lines.scale.z = line_size;
+    lines.color.a = 0.5, lines.color.r = 1.0, lines.color.g = 1.0, lines.color.b = 1.0;
+    markers_.markers.push_back(lines);
 }
 
 void NavsatfixTrajectory::AddNewPoint(const double x, const double y, const SolutionStatus status)
 {
-    visualization_msgs::Marker &m = points_.markers[0];
-    
-    m.points.push_back(GetPoint(x, y, 0.1));
+    visualization_msgs::Marker &points_r = markers_.markers[0];
+    visualization_msgs::Marker &lines_r = markers_.markers[1];
+
+    auto pos = GetPoint(x, y, 0.1);
+    points_r.points.push_back(pos);
+    lines_r.points.push_back(pos);
 
     std_msgs::ColorRGBA color;
     color.a = 0.9;
@@ -149,7 +170,7 @@ void NavsatfixTrajectory::AddNewPoint(const double x, const double y, const Solu
         ros_exception("unknown status");
         break;
     }
-    m.colors.push_back(color);
+    points_r.colors.push_back(color);
 }
 
 bool NavsatfixTrajectory::SetInitialLLA(
