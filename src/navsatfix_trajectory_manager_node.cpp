@@ -1,6 +1,11 @@
 /*
     NavSatFix message visualizer on rviz using its object MarkerArray
 
+    This package
+        provides SetInitialLLA message
+            to set initial position (latitude, longitude, altitude) for origin in rviz.
+        subscribes NavSatFix message.
+        publishes MarkerArray message as rviz object.
 */
 
 #include <ros/ros.h>
@@ -38,24 +43,21 @@ class NavsatfixTrajectory {
 public:
     NavsatfixTrajectory();
 
-    void MainLoop();
+    void Spin();
 private:
+    // Marker array Publisher related stuff
     visualization_msgs::MarkerArray markers_;
     ros::Publisher pub_markers_;
 
     void InitializeMarkerArray();
     void AddNewPoint(const double x, const double y, const SolutionStatus);
 
-    // Service server instances
+    // Service server instance
     ros::ServiceServer sv_set_initial_lla_;
-    ros::ServiceServer sv_add_new_marker_;
 
     bool SetInitialLLA(
         navsatfix_trajectory_manager::SetInitialLLA::Request &req,
         navsatfix_trajectory_manager::SetInitialLLA::Response &res
-    );
-    bool AddNewMarker(
-
     );
 };
 
@@ -64,7 +66,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "navsatfix_trajectory_manager_node");
     
     NavsatfixTrajectory nst;
-    nst.MainLoop();
+    nst.Spin();
     
     return 0;
 }
@@ -75,25 +77,22 @@ NavsatfixTrajectory::NavsatfixTrajectory()
 {
     ros::NodeHandle nh;
 
-    // register publisher
-    pub_markers_ = nh.advertise<visualization_msgs::MarkerArray>("navsatfix_trajectory", 1);
-
     // register services
     sv_set_initial_lla_ = nh.advertiseService(
         "set_initial_lla",
         &NavsatfixTrajectory::SetInitialLLA,
         this
     );
-//    sv_add_new_marker_ = nh.
 
+    // register publisher
+    pub_markers_ = nh.advertise<visualization_msgs::MarkerArray>("navsatfix_trajectory", 1);
     InitializeMarkerArray();
 
     ROS_INFO("Following services are provided");
     ROS_INFO("$rosservice call /set_initial_lla latitude longitude altitude");
-    ROS_INFO("$rosservice call /add_new_marker latitude longitude altitude");
 }
 
-void NavsatfixTrajectory::MainLoop()
+void NavsatfixTrajectory::Spin()
 {
     for (int i = 0; i < 10; ++i) {
         for (int j = 0; j < 10; ++j) {
