@@ -10,6 +10,7 @@
 
 #include <ros/ros.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <sensor_msgs/NavSatFix.h>
 
 // service definition
 #include <navsatfix_trajectory_manager/SetInitialLLA.h>
@@ -52,6 +53,9 @@ public:
 
     void Spin();
 private:
+    ros::Subscriber sub_navsatfix_;
+    void SubCallback(const sensor_msgs::NavSatFix::ConstPtr&);
+
     // Marker array Publisher related stuff
     visualization_msgs::MarkerArray markers_;
     ros::Publisher pub_markers_;
@@ -60,7 +64,7 @@ private:
     void AddNewPoint(const double x, const double y, const SolutionStatus);
 
     // Initial LLA is required for calculating relative position,
-    // Therefore the exception is thrown when the visualization starts
+    // Therefore the exception is thrown when the node starts working without setting this.
     LLA initial_lla_;
 };
 
@@ -91,7 +95,12 @@ NavsatfixTrajectory::NavsatfixTrajectory()
         ROS_INFO("Initial altitude: %f", initial_lla_.altitude);
     else ros_exception("initial altitude is not set on rosparam");
 
+    std::string topic_name;
+    if (nh.getParam("navsatfix_to_be_visualized", topic_name))
+        ROS_INFO("Topic to be visualized: %s", topic_name.c_str());
+    else ros_exception("navsatfix topic is not specified on rosparam");
     // register subscriber/publisher
+    sub_navsatfix_ = nh.subscribe(topic_name, 1, &NavsatfixTrajectory::SubCallback, this);
     pub_markers_ = nh.advertise<visualization_msgs::MarkerArray>("navsatfix_trajectory", 1);
     InitializeMarkerArray();
 }
@@ -111,6 +120,11 @@ void NavsatfixTrajectory::Spin()
         ros::spinOnce();
         rate.sleep();
     }
+}
+
+void NavsatfixTrajectory::SubCallback(const sensor_msgs::NavSatFix::ConstPtr& navsatfix)
+{
+
 }
 
 void NavsatfixTrajectory::InitializeMarkerArray()
