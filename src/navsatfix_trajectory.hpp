@@ -5,22 +5,6 @@
 #include <visualization_msgs/MarkerArray.h>
 #include <sensor_msgs/NavSatFix.h>
 
-// service definition
-#include <navsatfix_trajectory_manager/SetInitialLLA.h>
-
-// -- utilities -- 
-#define ros_exception(message)                             \
-{   std::string dump = "\nmessage: ";                      \
-    dump += (message);                                     \
-    dump += "\nat line: " + std::to_string(__LINE__);      \
-    dump += "\nin function: " + std::string(__FUNCTION__); \
-    dump += "\nin file: " + std::string(__FILE__);         \
-    ROS_ERROR("%s", dump.c_str());                         \
-    throw std::runtime_error(dump.c_str());                \
-}
-
-geometry_msgs::Point GetPoint(const double x, const double y, const double z);
-
 // -- Specilized Object definitions for this package --
 enum SolutionStatus {
     FIX,
@@ -33,6 +17,11 @@ struct LLA {
     double latitude;
     double longitude;
     double altitude;
+    LLA() : latitude(0.0), longitude(0.0), altitude(0.0) {}
+    LLA(const sensor_msgs::NavSatFix nav)
+        : latitude(nav.latitude), longitude(nav.longitude), altitude(nav.altitude)
+    {
+    }
 };
 
 class NavsatfixTrajectory {

@@ -1,11 +1,5 @@
 #include "navsatfix_trajectory.hpp"
-
-geometry_msgs::Point GetPoint(const double x, const double y, const double z)
-{
-    geometry_msgs::Point p;
-    p.x = x, p.y = y, p.z = z;
-    return p;
-}
+#include "utility.hpp"
 
 NavsatfixTrajectory::NavsatfixTrajectory()
 {
@@ -40,7 +34,7 @@ void NavsatfixTrajectory::Spin()
         }
     }
 
-    ros::Rate rate(10);
+    ros::Rate rate {10};
     while (ros::ok()) {
         pub_markers_.publish(markers_);
 
@@ -51,7 +45,7 @@ void NavsatfixTrajectory::Spin()
 
 void NavsatfixTrajectory::SubCallback(const sensor_msgs::NavSatFix::ConstPtr& navsatfix)
 {
-    
+    LLA current_lla {*navsatfix};
 }
 
 void NavsatfixTrajectory::InitializeMarkerArray()

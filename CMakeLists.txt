@@ -53,24 +53,6 @@ find_package(catkin REQUIRED COMPONENTS
 #   Message2.msg
 # )
 
-## Generate services in the 'srv' folder
-add_service_files(
-  FILES
-  SetInitialLLA.srv
-)
-
-## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
-
-## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  std_msgs  # Or other packages containing msgs
-)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -132,7 +114,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node src/navsatfix_trajectory_manager_node.cpp src/navsatfix_trajectory.cpp)
+add_executable(${PROJECT_NAME}_node src/navsatfix_trajectory_manager_node.cpp src/navsatfix_trajectory.cpp src/utility.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
