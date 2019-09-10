@@ -16,13 +16,14 @@
 
 // -- utilities -- 
 #define ros_exception(message)                             \
-    std::string dump = "\nmessage: ";                      \
+{   std::string dump = "\nmessage: ";                      \
     dump += (message);                                     \
     dump += "\nat line: " + std::to_string(__LINE__);      \
     dump += "\nin function: " + std::string(__FUNCTION__); \
     dump += "\nin file: " + std::string(__FILE__);         \
     ROS_ERROR("%s", dump.c_str());                         \
-    throw std::runtime_error(dump.c_str());
+    throw std::runtime_error(dump.c_str());                \
+}
 
 geometry_msgs::Point GetPoint(const double x, const double y, const double z)
 {
@@ -39,6 +40,12 @@ enum SolutionStatus {
     SINGLE,
 };
 
+struct LLA {
+    double latitude;
+    double longitude;
+    double altitude;
+};
+
 class NavsatfixTrajectory {
 public:
     NavsatfixTrajectory();
@@ -52,13 +59,9 @@ private:
     void InitializeMarkerArray();
     void AddNewPoint(const double x, const double y, const SolutionStatus);
 
-    // Service server instance
-    ros::ServiceServer sv_set_initial_lla_;
-
-    bool SetInitialLLA(
-        navsatfix_trajectory_manager::SetInitialLLA::Request &req,
-        navsatfix_trajectory_manager::SetInitialLLA::Response &res
-    );
+    // Initial LLA is required for calculating relative position,
+    // Therefore the exception is thrown when the visualization starts
+    LLA initial_lla_;
 };
 
 int main(int argc, char **argv)
@@ -77,19 +80,20 @@ NavsatfixTrajectory::NavsatfixTrajectory()
 {
     ros::NodeHandle nh;
 
-    // register services
-    sv_set_initial_lla_ = nh.advertiseService(
-        "set_initial_lla",
-        &NavsatfixTrajectory::SetInitialLLA,
-        this
-    );
+    // Get initial LLA from rosparam
+    if (nh.getParam("gnss_ini_lat", initial_lla_.latitude))
+        ROS_INFO("Initial latitudde: %f", initial_lla_.latitude);
+    else ros_exception("initial latitude is not set on rosparam");
+    if (nh.getParam("gnss_ini_lon", initial_lla_.longitude))
+        ROS_INFO("Initial longitude: %f", initial_lla_.longitude);
+    else ros_exception("initial longitude is not set on rosparam");
+    if (nh.getParam("gnss_ini_alt", initial_lla_.altitude))
+        ROS_INFO("Initial altitude: %f", initial_lla_.altitude);
+    else ros_exception("initial altitude is not set on rosparam");
 
-    // register publisher
+    // register subscriber/publisher
     pub_markers_ = nh.advertise<visualization_msgs::MarkerArray>("navsatfix_trajectory", 1);
     InitializeMarkerArray();
-
-    ROS_INFO("Following services are provided");
-    ROS_INFO("$rosservice call /set_initial_lla latitude longitude altitude");
 }
 
 void NavsatfixTrajectory::Spin()
@@ -170,14 +174,4 @@ void NavsatfixTrajectory::AddNewPoint(const double x, const double y, const Solu
         break;
     }
     points_r.colors.push_back(color);
-}
-
-bool NavsatfixTrajectory::SetInitialLLA(
-    navsatfix_trajectory_manager::SetInitialLLA::Request &req,
-    navsatfix_trajectory_manager::SetInitialLLA::Response &res
-)
-{
-    res.status = 1;
-    ROS_INFO("service is called lat : %f, lon : %f, alt : %f", req.latitude, req.longitude, req.altitude);
-    return true;
 }
