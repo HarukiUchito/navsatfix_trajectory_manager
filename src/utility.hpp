@@ -13,8 +13,22 @@
     throw std::runtime_error(dump.c_str());                \
 }
 
-geometry_msgs::Point GetPoint(const double x, const double y, const double z);
+struct Point {
+public:
+    double x;
+    double y;
+    double z;
+    Point() : x(0.0), y(0.0), z(0.0) {}
+    Point(double ix, double iy, double iz)
+        : x(ix), y(iy), z(iz) {}
+    double norm(const Point&) const;    
+};
+// Binary operators for Point
+Point operator-(const Point &p1, const Point &p2);
 
+geometry_msgs::Point GetPointMsg(const double x, const double y, const double z);
+geometry_msgs::Point GetPointMsg(const Point&);
 
+double deg2rad(double degrees);
 
 #endif

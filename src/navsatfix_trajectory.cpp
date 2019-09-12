@@ -1,20 +1,23 @@
 #include "navsatfix_trajectory.hpp"
 #include "utility.hpp"
+#include "lla.hpp"
 
 NavsatfixTrajectory::NavsatfixTrajectory()
 {
     ros::NodeHandle nh;
 
     // Get initial LLA from rosparam
-    if (nh.getParam("gnss_ini_lat", initial_lla_.latitude))
-        ROS_INFO("Initial latitudde: %f", initial_lla_.latitude);
+    double lat, lon, alt;
+    if (nh.getParam("gnss_ini_lat", lat))
+        ROS_INFO("Initial latitudde: %f", lat);
     else ros_exception("initial latitude is not set on rosparam");
-    if (nh.getParam("gnss_ini_lon", initial_lla_.longitude))
-        ROS_INFO("Initial longitude: %f", initial_lla_.longitude);
+    if (nh.getParam("gnss_ini_lon", lon))
+        ROS_INFO("Initial longitude: %f", lon);
     else ros_exception("initial longitude is not set on rosparam");
-    if (nh.getParam("gnss_ini_alt", initial_lla_.altitude))
-        ROS_INFO("Initial altitude: %f", initial_lla_.altitude);
+    if (nh.getParam("gnss_ini_alt", alt))
+        ROS_INFO("Initial altitude: %f", alt);
     else ros_exception("initial altitude is not set on rosparam");
+    initial_lla_ = LLA {lat, lon, alt};
 
     std::string topic_name;
     if (nh.getParam("navsatfix_to_be_visualized", topic_name))
@@ -28,12 +31,6 @@ NavsatfixTrajectory::NavsatfixTrajectory()
 
 void NavsatfixTrajectory::Spin()
 {
-    for (int i = 0; i < 10; ++i) {
-        for (int j = 0; j < 10; ++j) {
-            AddNewPoint(double(i), double(j), SolutionStatus((i + j) % 4));
-        }
-    }
-
     ros::Rate rate {10};
     while (ros::ok()) {
         pub_markers_.publish(markers_);
@@ -46,6 +43,9 @@ void NavsatfixTrajectory::Spin()
 void NavsatfixTrajectory::SubCallback(const sensor_msgs::NavSatFix::ConstPtr& navsatfix)
 {
     LLA current_lla {*navsatfix};
+    geometry_msgs::Point pos = CalcRelativePosition(initial_lla_, current_lla);
+    ROS_INFO("new point x: %f, y: %f", pos.x, pos.y);
+    AddNewPoint(pos.x, pos.y, SolutionStatus(navsatfix->status.status));
 }
 
 void NavsatfixTrajectory::InitializeMarkerArray()
@@ -84,7 +84,7 @@ void NavsatfixTrajectory::AddNewPoint(const double x, const double y, const Solu
     visualization_msgs::Marker &points_r = markers_.markers[0];
     visualization_msgs::Marker &lines_r = markers_.markers[1];
 
-    auto pos = GetPoint(x, y, 0.1);
+    auto pos = GetPointMsg(x, y, 0.1);
     points_r.points.push_back(pos);
     lines_r.points.push_back(pos);
 

@@ -5,23 +5,14 @@
 #include <visualization_msgs/MarkerArray.h>
 #include <sensor_msgs/NavSatFix.h>
 
+#include "lla.hpp"
+
 // -- Specilized Object definitions for this package --
 enum SolutionStatus {
     FIX,
     FLOAT,
     DGNSS,
     SINGLE,
-};
-
-struct LLA {
-    double latitude;
-    double longitude;
-    double altitude;
-    LLA() : latitude(0.0), longitude(0.0), altitude(0.0) {}
-    LLA(const sensor_msgs::NavSatFix nav)
-        : latitude(nav.latitude), longitude(nav.longitude), altitude(nav.altitude)
-    {
-    }
 };
 
 class NavsatfixTrajectory {
