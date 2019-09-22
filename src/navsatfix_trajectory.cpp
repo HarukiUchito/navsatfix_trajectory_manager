@@ -19,13 +19,15 @@ NavsatfixTrajectory::NavsatfixTrajectory()
     else ros_exception("initial altitude is not set on rosparam");
     initial_lla_ = LLA {lat, lon, alt};
 
+    ros::NodeHandle nhp("~");
     std::string topic_name;
-    if (nh.getParam("navsatfix_to_be_visualized", topic_name))
+    if (nhp.getParam("navsatfix_to_be_visualized", topic_name))
         ROS_INFO("Topic to be visualized: %s", topic_name.c_str());
     else ros_exception("navsatfix topic is not specified on rosparam");
     // register subscriber/publisher
     sub_navsatfix_ = nh.subscribe(topic_name, 1, &NavsatfixTrajectory::SubCallback, this);
-    pub_markers_ = nh.advertise<visualization_msgs::MarkerArray>("navsatfix_trajectory", 1);
+    std::string markers_name = nhp.getNamespace() + "_trajectory";
+    pub_markers_ = nh.advertise<visualization_msgs::MarkerArray>(markers_name, 1);
     InitializeMarkerArray();
 }
 
@@ -42,10 +44,29 @@ void NavsatfixTrajectory::Spin()
 
 void NavsatfixTrajectory::SubCallback(const sensor_msgs::NavSatFix::ConstPtr& navsatfix)
 {
-    LLA current_lla {*navsatfix};
+    sensor_msgs::NavSatFix cp = *navsatfix;
+    // this should be fixed in publisher
+    if (cp.latitude >= 100.0)
+    {
+        cp.status.status = SolutionStatus::SINGLE;
+        
+        auto conv = [](double org, int deglen)
+        {
+            auto os = std::to_string(org);
+            auto deg = os.substr(0, deglen);
+            auto mdm = os.substr(deglen, os.size() - deglen);
+            return std::stod(deg) + std::stod(mdm) / 60.0;
+        };
+        
+        cp.latitude = conv(cp.latitude, 2);
+        cp.longitude = conv(cp.longitude, 3);
+    }
+
+    LLA current_lla {cp};
+
     geometry_msgs::Point pos = CalcRelativePosition(initial_lla_, current_lla);
-    ROS_INFO("new point x: %f, y: %f", pos.x, pos.y);
-    AddNewPoint(pos.x, pos.y, SolutionStatus(navsatfix->status.status));
+    ROS_INFO("new point lat: %f, lon: %f -> x: %f, y: %f", cp.latitude, cp.longitude, pos.x, pos.y);
+    AddNewPoint(pos.x, pos.y, SolutionStatus(cp.status.status));
 }
 
 void NavsatfixTrajectory::InitializeMarkerArray()
