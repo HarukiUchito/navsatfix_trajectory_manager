@@ -105,7 +105,7 @@ void NavsatfixTrajectory::AddNewPoint(const double x, const double y, const Solu
     visualization_msgs::Marker &points_r = markers_.markers[0];
     visualization_msgs::Marker &lines_r = markers_.markers[1];
 
-    auto pos = GetPointMsg(x, y, 0.1);
+    auto pos = GetPointMsg(x, y, 0.3);
     points_r.points.push_back(pos);
     lines_r.points.push_back(pos);
 
