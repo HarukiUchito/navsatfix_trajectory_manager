@@ -96,7 +96,7 @@ void NavsatfixTrajectory::InitializeMarkerArray()
     lines.type = visualization_msgs::Marker::LINE_STRIP;
     lines.action = visualization_msgs::Marker::ADD;
     lines.scale.x = line_size, lines.scale.y = line_size, lines.scale.z = line_size;
-    lines.color.a = 0.5, lines.color.r = 1.0, lines.color.g = 1.0, lines.color.b = 1.0;
+    lines.color.a = 0.3, lines.color.r = 1.0, lines.color.g = 1.0, lines.color.b = 1.0;
     markers_.markers.push_back(lines);
 }
 
@@ -110,7 +110,7 @@ void NavsatfixTrajectory::AddNewPoint(const double x, const double y, const Solu
     lines_r.points.push_back(pos);
 
     std_msgs::ColorRGBA color;
-    color.a = 0.9;
+    color.a = 1.0;
     switch (status)
     {
     case SolutionStatus::FIX:
