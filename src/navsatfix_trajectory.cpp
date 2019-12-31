@@ -71,7 +71,7 @@ void NavsatfixTrajectory::SubCallback(const sensor_msgs::NavSatFix::ConstPtr& na
 
 void NavsatfixTrajectory::InitializeMarkerArray()
 {
-    const char* frame_id = "/gnss";
+    const char* frame_id = "/gps";
     const char* name_space = "navsatfix_trajectory_manager_node";
     const double point_size = 0.2;
     const double line_size = 0.1;
